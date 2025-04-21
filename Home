@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Free online tool to convert images to stickers with transparent background. Create WhatsApp, Telegram, and Instagram stickers easily.">
+    <meta name="keywords" content="sticker maker, image to sticker, transparent background, WhatsApp stickers, Telegram stickers, Instagram stickers">
+    <title>Image to Sticker Converter | Create Custom Stickers Online</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.0/dist/body-pix.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a6bff;
+            --secondary-color: #f5f7ff;
+            --accent-color: #ff6b6b;
+            --dark-color: #333;
+            --light-color: #fff;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f9f9f9;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .ad-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+
+        .upload-section {
+            flex: 1;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+        }
+
+        .editor-section {
+            flex: 2;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-section {
+            flex: 1;
+            background-color: var(--light-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: #3a5bef;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-accent {
+            background-color: var(--accent-color);
+        }
+
+        .btn-accent:hover {
+            background-color: #e05a5a;
+        }
+
+        .tool-section {
+            margin-bottom: 20px;
+        }
+
+        .tool-section h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .tool-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            padding: 8px 15px;
+            background-color: var(--secondary-color);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tool-btn:hover {
+            background-color: #e0e5ff;
+        }
+
+        .tool-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .slider-container {
+            margin: 15px 0;
+        }
+
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .slider-container input[type="range"] {
+            width: 100%;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAABmJLR0QA/wD/AP+gvaeTAAAA+UlEQVQ4y+3UMUoDQRTG8Z8psJBUKTyAR7ATvIBgY2FjY2FhY2FhYWFhYWFhYWFhIYgXsLGwECEhxQaCkGKDhYXFJjCwO7ubZBNB8MGHw8y8/+PNvJk3/6oV7OIRL5jFQYpPcYdZfGAPj9jGQYqPcI9NvGMLD9jAYYqPcYd1vGED91jDUYqPc4tVvGIdd1jFcYpPcIMVvGAZt1jCSYpPcY1lPGMRN1jAaYrPcIVFPGEO15jHWYrPcYk5PGIWV5jBeYovcIEZPGAGl5jGZYqvcI4p3GMK/z7wGxWcJXgP8wAAAABJRU5ErkJggg==');
+            background-repeat: repeat;
+        }
+
+        #image-canvas {
+            max-width: 100%;
+            max-height: 400px;
+        }
+
+        .preview-themes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .theme-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn:hover {
+            opacity: 0.8;
+        }
+
+        .theme-whatsapp {
+            background-color: #e5f7ed;
+            color: #075e54;
+        }
+
+        .theme-telegram {
+            background-color: #e3f2fd;
+            color: #0088cc;
+        }
+
+        .theme-instagram {
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            color: white;
+        }
+
+        .theme-dark {
+            background-color: #333;
+            color: white;
+        }
+
+        .theme-light {
+            background-color: white;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            margin: 20px 0;
+            border-radius: var(--border-radius);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-sticker {
+            max-width: 150px;
+            max-height: 150px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .download-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bg-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .bg-suggestion {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .bg-suggestion:hover {
+            transform: scale(1.1);
+        }
+
+        .bg-suggestion.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .btn, .download-btn {
+                width: 100%;
+            }
+            
+            .tool-options {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image to Sticker Converter</h1>
+            <p class="subtitle">Create custom stickers with transparent background for WhatsApp, Telegram, and Instagram</p>
+        </header>
+
+        <!-- Ad Space Top -->
+        <div class="ad-container">
+            <!-- Google AdSense Ad Unit -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_ID"></script>
+            <!-- StickerTool_Top -->
+            <ins class="adsbygoogle"
+                style="display:block"
+                data-ad-client="ca-pub-YOUR_ADSENSE_ID"
+                data-ad-slot="YOUR_AD_SLOT_ID"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2>Upload Image</h2>
+                <div class="upload-area" id="upload-area">
+                    <i>📁</i>
+                    <h3>Drag & Drop Image Here</h3>
+                    <p>or click to browse files</p>
+                    <input type="file" id="file-input" accept="image/*">
+                </div>
+                <button class="btn" id="remove-bg-btn">Remove Background</button>
+                <button class="btn btn-outline" id="reset-btn">Reset Image</button>
+
+                <div class="tool-section">
+                    <h3>Background Suggestions</h3>
+                    <div class="bg-suggestions" id="bg-suggestions">
+                        <div class="bg-suggestion" style="background-color: #ffffff;" data-color="#ffffff"></div>
+                        <div class="bg-suggestion" style="background-color: #000000;" data-color="#000000"></div>
+                        <div class="bg-suggestion" style="background-color: #ff0000;" data-color="#ff0000"></div>
+                        <div class="bg-suggestion" style="background-color: #00ff00;" data-color="#00ff00"></div>
+                        <div class="bg-suggestion" style="background-color: #0000ff;" data-color="#0000ff"></div>
+                        <div class="bg-suggestion" style="background-color: #ffff00;" data-color="#ffff00"></div>
+                        <div class="bg-suggestion" style="background-color: #ff00ff;" data-color="#ff00ff"></div>
+                        <div class="bg-suggestion" style="background-color: #00ffff;" data-color="#00ffff"></div>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Sticker Size</h3>
+                    <div class="tool-options">
+                        <button class="tool-btn active" data-size="512">512px</button>
+                        <button class="tool-btn" data-size="256">256px</button>
+                        <button class="tool-btn" data-size="128">128px</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Platform Presets</h3>
+                    <div class="tool-options">
+                        <button class="tool-btn" data-platform="whatsapp">WhatsApp</button>
+                        <button class="tool-btn" data-platform="telegram">Telegram</button>
+                        <button class="tool-btn" data-platform="instagram">Instagram</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="editor-section">
+                <h2>Edit Sticker</h2>
+                <div class="canvas-container">
+                    <div class="loading" id="loading-indicator">
+                        <div class="loading-spinner"></div>
+                        <p>Processing image...</p>
+                    </div>
+                    <canvas id="image-canvas"></canvas>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Edit Tools</h3>
+                    <div class="tool-options">
+                        <button class="tool-btn" id="crop-btn">Crop</button>
+                        <button class="tool-btn" id="outline-btn">Add Outline</button>
+                        <button class="tool-btn" id="rotate-btn">Rotate</button>
+                        <button class="tool-btn" id="flip-h-btn">Flip Horizontal</button>
+                        <button class="tool-btn" id="flip-v-btn">Flip Vertical</button>
+                    </div>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Outline Settings</h3>
+                    <div class="slider-container">
+                        <label for="outline-width">Width: <span id="outline-width-value">2</span>px</label>
+                        <input type="range" id="outline-width" min="1" max="10" value="2">
+                    </div>
+                    <div class="slider-container">
+                        <label for="outline-color">Color:</label>
+                        <input type="color" id="outline-color" value="#000000">
+                    </div>
+                </div>
+
+                <div class="download-options">
+                    <button class="btn download-btn" id="download-png-btn">Download PNG</button>
+                    <button class="btn download-btn" id="download-webp-btn">Download WebP</button>
+                </div>
+            </div>
+
+            <div class="preview-section">
+                <h2>Preview</h2>
+                <div class="preview-themes">
+                    <button class="theme-btn theme-whatsapp" data-theme="whatsapp">WhatsApp</button>
+                    <button class="theme-btn theme-telegram" data-theme="telegram">Telegram</button>
+                    <button class="theme-btn theme-instagram" data-theme="instagram">Instagram</button>
+                    <button class="theme-btn theme-dark" data-theme="dark">Dark</button>
+                    <button class="theme-btn theme-light" data-theme="light">Light</button>
+                </div>
+
+                <div class="preview-container" id="whatsapp-preview">
+                    <img id="preview-sticker" class="preview-sticker" src="" alt="Sticker Preview" style="display: none;">
+                </div>
+
+                <div class="tool-section">
+                    <h3>Export Options</h3>
+                    <button class="btn btn-outline" id="save-pack-btn">Save to Sticker Pack</button>
+                    <button class="btn btn-accent" id="export-whatsapp-btn">Export to WhatsApp</button>
+                    <button class="btn btn-outline" id="export-telegram-btn">Export to Telegram</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ad Space Bottom -->
+        <div class="ad-container">
+            <!-- Google AdSense Ad Unit -->
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_ID"></script>
+            <!-- StickerTool_Bottom -->
+            <ins class="adsbygoogle"
+                style="display:block"
+                data-ad-client="ca-pub-YOUR_ADSENSE_ID"
+                data-ad-slot="YOUR_AD_SLOT_ID"
+                data-ad-format="auto"
+                data-full-width-responsive="true"></ins>
+            <script>
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <footer>
+            <p>© 2023 Image to Sticker Converter. All rights reserved.</p>
+            <p>This tool works entirely in your browser - no images are uploaded to any server.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Canvas setup
+            const canvas = new fabric.Canvas('image-canvas', {
+                backgroundColor: null,
+                preserveObjectStacking: true
+            });
+            
+            // DOM elements
+            const fileInput = document.getElementById('file-input');
+            const uploadArea = document.getElementById('upload-area');
+            const removeBgBtn = document.getElementById('remove-bg-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const cropBtn = document.getElementById('crop-btn');
+            const outlineBtn = document.getElementById('outline-btn');
+            const rotateBtn = document.getElementById('rotate-btn');
+            const flipHBtn = document.getElementById('flip-h-btn');
+            const flipVBtn = document.getElementById('flip-v-btn');
+            const downloadPngBtn = document.getElementById('download-png-btn');
+            const downloadWebpBtn = document.getElementById('download-webp-btn');
+            const savePackBtn = document.getElementById('save-pack-btn');
+            const exportWhatsappBtn = document.getElementById('export-whatsapp-btn');
+            const exportTelegramBtn = document.getElementById('export-telegram-btn');
+            const previewSticker = document.getElementById('preview-sticker');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const outlineWidthSlider = document.getElementById('outline-width');
+            const outlineWidthValue = document.getElementById('outline-width-value');
+            const outlineColorPicker = document.getElementById('outline-color');
+            const bgSuggestions = document.getElementById('bg-suggestions');
+            
+            // State variables
+            let originalImage = null;
+            let currentImage = null;
+            let isCropping = false;
+            let cropRect = null;
+            let outlineAdded = false;
+            let net = null;
+            
+            // Initialize TensorFlow.js model
+            async function loadBodyPixModel() {
+                showLoading(true, "Loading AI model...");
+                try {
+                    net = await bodyPix.load({
+                        architecture: 'MobileNetV1',
+                        outputStride: 16,
+                        multiplier: 0.75,
+                        quantBytes: 2
+                    });
+                    console.log("BodyPix model loaded successfully");
+                    showLoading(false);
+                } catch (error) {
+                    console.error("Error loading BodyPix model:", error);
+                    showLoading(false);
+                    alert("Failed to load background remover. Some features may not work.");
+                }
+            }
+            
+            // Load model when page loads
+            loadBodyPixModel();
+            
+            // Event listeners
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f4ff';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.backgroundColor = '';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleFileUpload(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFileUpload(fileInput.files[0]);
+                }
+            });
+            
+            removeBgBtn.addEventListener('click', removeBackground);
+            resetBtn.addEventListener('click', resetImage);
+            cropBtn.addEventListener('click', toggleCrop);
+            outlineBtn.addEventListener('click', toggleOutline);
+            rotateBtn.addEventListener('click', rotateImage);
+            flipHBtn.addEventListener('click', flipHorizontal);
+            flipVBtn.addEventListener('click', flipVertical);
+            downloadPngBtn.addEventListener('click', () => downloadImage('png'));
+            downloadWebpBtn.addEventListener('click', () => downloadImage('webp'));
+            savePackBtn.addEventListener('click', saveToStickerPack);
+            exportWhatsappBtn.addEventListener('click', exportToWhatsApp);
+            exportTelegramBtn.addEventListener('click', exportToTelegram);
+            outlineWidthSlider.addEventListener('input', updateOutline);
+            outlineColorPicker.addEventListener('input', updateOutline);
+            
+            // Background suggestion click handlers
+            bgSuggestions.querySelectorAll('.bg-suggestion').forEach(suggestion => {
+                suggestion.addEventListener('click', function() {
+                    // Remove selected class from all
+                    bgSuggestions.querySelectorAll('.bg-suggestion').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    
+                    // Add to clicked one
+                    this.classList.add('selected');
+                    
+                    // Apply background color
+                    const color = this.getAttribute('data-color');
+                    canvas.setBackgroundColor(color, () => {
+                        canvas.renderAll();
+                        updatePreview();
+                    });
+                });
+            });
+            
+            // Size buttons
+            document.querySelectorAll('[data-size]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const size = parseInt(this.getAttribute('data-size'));
+                    resizeImage(size);
+                });
+            });
+            
+            // Platform buttons
+            document.querySelectorAll('[data-platform]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const platform = this.getAttribute('data-platform');
+                    applyPlatformPresets(platform);
+                });
+            });
+            
+            // Theme buttons
+            document.querySelectorAll('[data-theme]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.getAttribute('data-theme');
+                    updatePreviewTheme(theme);
+                });
+            });
+            
+            // Functions
+            function handleFileUpload(file) {
+                if (!file.type.match('image.*')) {
+                    alert('Please select an image file.');
+                    return;
+                }
+                
+                showLoading(true, "Loading image...");
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fabric.Image.fromURL(e.target.result, function(img) {
+                        originalImage = img;
+                        currentImage = img;
+                        
+                        // Set canvas dimensions
+                        const maxWidth = Math.min(512, img.width);
+                        const maxHeight = Math.min(512, img.height);
+                        canvas.setDimensions({
+                            width: maxWidth,
+                            height: maxHeight
+                        });
+                        
+                        // Scale image to fit canvas
+                        const scale = Math.min(
+                            maxWidth / img.width,
+                            maxHeight / img.height
+                        );
+                        img.scale(scale);
+                        
+                        canvas.clear();
+                        canvas.add(img);
+                        canvas.renderAll();
+                        
+                        // Update preview
+                        updatePreview();
+                        
+                        showLoading(false);
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function showLoading(show, message = "Processing image...") {
+                loadingIndicator.style.display = show ? 'flex' : 'none';
+                if (show) {
+                    loadingIndicator.querySelector('p').textContent = message;
+                }
+            }
+            
+            async function removeBackground() {
+                if (!currentImage) {
+                    alert('Please upload an image first.');
+                    return;
+                }
+                
+                if (!net) {
+                    alert('Background remover is still loading. Please try again in a moment.');
+                    return;
+                }
+                
+                showLoading(true, "Removing background...");
+                
+                try {
+                    // Get image data from canvas
+                    const imageData = await getCanvasImageData();
+                    
+                    // Segment person from background
+                    const segmentation = await net.segmentPerson(imageData, {
+                        flipHorizontal: false,
+                        internalResolution: 'high',
+                        segmentationThreshold: 0.7
+                    });
+                    
+                    // Create mask from segmentation
+                    const mask = bodyPix.toMask(segmentation);
+                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas.width = imageData.width;
+                    maskCanvas.height = imageData.height;
+                    const maskCtx = maskCanvas.getContext('2d');
+                    const maskImageData = maskCtx.createImageData(imageData.width, imageData.height);
+                    
+                    // Apply mask to create transparent background
+                    for (let i = 0; i < mask.data.length; i++) {
+                        // Only keep pixels where person is detected
+                        maskImageData.data[i * 4] = imageData.data[i * 4];         // R
+                        maskImageData.data[i * 4 + 1] = imageData.data[i * 4 + 1]; // G
+                        maskImageData.data[i * 4 + 2] = imageData.data[i * 4 + 2]; // B
+                        maskImageData.data[i * 4 + 3] = mask.data[i] === 1 ? 255 : 0; // A
+                    }
+                    
+                    maskCtx.putImageData(maskImageData, 0, 0);
+                    
+                    // Convert to fabric image
+                    fabric.Image.fromURL(maskCanvas.toDataURL(), function(img) {
+                        currentImage = img;
+                        canvas.clear();
+                        canvas.add(img);
+                        canvas.renderAll();
+                        updatePreview();
+                        showLoading(false);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error removing background:', error);
+                    alert('Failed to remove background. Please try again.');
+                    showLoading(false);
+                }
+            }
+            
+            function getCanvasImageData() {
+                return new Promise((resolve) => {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvas.width;
+                    tempCanvas.height = canvas.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Draw canvas to temp canvas
+                    tempCtx.drawImage(canvas.getElement(), 0, 0);
+                    
+                    // Get image data
+                    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    resolve(imageData);
+                });
+            }
+            
+            function resetImage() {
+                if (originalImage) {
+                    canvas.clear();
+                    currentImage = originalImage;
+                    canvas.add(currentImage);
+                    canvas.renderAll();
+                    updatePreview();
+                    
+                    // Reset outline
+                    outlineAdded = false;
+                    outlineBtn.classList.remove('active');
+                    
+                    // Reset background
+                    canvas.setBackgroundColor(null, () => {
+                        canvas.renderAll();
+                        updatePreview();
+                    });
+                    
+                    // Reset selected background suggestion
+                    bgSuggestions.querySelectorAll('.bg-suggestion').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                }
+            }
+            
+            function toggleCrop() {
+                isCropping = !isCropping;
+                cropBtn.classList.toggle('active', isCropping);
+                
+                if (isCropping) {
+                    // Create a cropping rectangle
+                    cropRect = new fabric.Rect({
+                        left: 50,
+                        top: 50,
+                        width: 100,
+                        height: 100,
+                        fill: 'rgba(0, 0, 0, 0.3)',
+                        stroke: '#000',
+                        strokeWidth: 1,
+                        strokeDashArray: [5, 5],
+                        transparentCorners: false,
+                        cornerColor: '#fff',
+                        cornerStrokeColor: '#000',
+                        cornerSize: 10,
+                        cornerStyle: 'circle',
+                        borderColor: '#000',
+                        borderScaleFactor: 1.5,
+                        hasRotatingPoint: false,
+                        selectable: true
+                    });
+                    
+                    canvas.add(cropRect);
+                    canvas.setActiveObject(cropRect);
+                } else {
+                    if (cropRect) {
+                        // Apply cropping
+                        const cropped = new fabric.Image(currentImage.getElement(), {
+                            left: cropRect.left,
+                            top: cropRect.top,
+                            width: cropRect.width,
+                            height: cropRect.height,
+                            cropX: cropRect.left - currentImage.left,
+                            cropY: cropRect.top - currentImage.top
+                        });
+                        
+                        canvas.remove(cropRect);
+                        canvas.clear();
+                        canvas.add(cropped);
+                        currentImage = cropped;
+                        canvas.renderAll();
+                        updatePreview();
+                        
+                        cropRect = null;
+                    }
+                }
+            }
+            
+            function toggleOutline() {
+                outlineAdded = !outlineAdded;
+                outlineBtn.classList.toggle('active', outlineAdded);
+                
+                if (outlineAdded) {
+                    addOutline();
+                } else {
+                    // Remove outline by resetting the image
+                    if (currentImage) {
+                        canvas.clear();
+                        canvas.add(currentImage);
+                        canvas.renderAll();
+                        updatePreview();
+                    }
+                }
+            }
+            
+            function addOutline() {
+                if (!currentImage) return;
+                
+                const outlineWidth = parseInt(outlineWidthSlider.value);
+                const outlineColor = outlineColorPicker.value;
+                
+                // Create a copy of the current image
+                const imgWithOutline = new fabric.Image(currentImage.getElement());
+                
+                // Apply outline effect
+                imgWithOutline.set({
+                    shadow: new fabric.Shadow({
+                        color: outlineColor,
+                        blur: 0,
+                        offsetX: 0,
+                        offsetY: 0,
+                        affectStroke: true
+                    }),
+                    stroke: outlineColor,
+                    strokeWidth: outlineWidth
+                });
+                
+                canvas.clear();
+                canvas.add(imgWithOutline);
+                canvas.renderAll();
+                updatePreview();
+            }
+            
+            function updateOutline() {
+                if (outlineAdded) {
+                    outlineWidthValue.textContent = outlineWidthSlider.value;
+                    addOutline();
+                }
+            }
+            
+            function rotateImage() {
+                if (currentImage) {
+                    currentImage.angle = (currentImage.angle || 0) + 90;
+                    currentImage.setCoords();
+                    canvas.renderAll();
+                    updatePreview();
+                }
+            }
+            
+            function flipHorizontal() {
+                if (currentImage) {
+                    currentImage.flipX = !currentImage.flipX;
+                    canvas.renderAll();
+                    updatePreview();
+                }
+            }
+            
+            function flipVertical() {
+                if (currentImage) {
+                    currentImage.flipY = !currentImage.flipY;
+                    canvas.renderAll();
+                    updatePreview();
+                }
+            }
+            
+            function resizeImage(size) {
+                if (!currentImage) return;
+                
+                const scale = size / Math.max(currentImage.width, currentImage.height);
+                currentImage.scale(scale);
+                canvas.setDimensions({
+                    width: size,
+                    height: size
+                });
+                canvas.renderAll();
+                updatePreview();
+            }
+            
+            function applyPlatformPresets(platform) {
+                if (!currentImage) return;
+                
+                switch (platform) {
+                    case 'whatsapp':
+                        resizeImage(512);
+                        break;
+                    case 'telegram':
+                        resizeImage(512);
+                        break;
+                    case 'instagram':
+                        resizeImage(256);
+                        break;
+                }
+            }
+            
+            function updatePreview() {
+                if (!currentImage) return;
+                
+                const dataURL = canvas.toDataURL({
+                    format: 'png',
+                    quality: 1
+                });
+                
+                previewSticker.src = dataURL;
+                previewSticker.style.display = 'block';
+            }
+            
+            function updatePreviewTheme(theme) {
+                const previewContainer = document.getElementById('whatsapp-preview');
+                
+                switch (theme) {
+                    case 'whatsapp':
+                        previewContainer.style.backgroundColor = '#e5f7ed';
+                        break;
+                    case 'telegram':
+                        previewContainer.style.backgroundColor = '#e3f2fd';
+                        break;
+                    case 'instagram':
+                        previewContainer.style.background = 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)';
+                        break;
+                    case 'dark':
+                        previewContainer.style.backgroundColor = '#333';
+                        break;
+                    case 'light':
+                        previewContainer.style.backgroundColor = '#fff';
+                        break;
+                }
+            }
+            
+            function downloadImage(format) {
+                if (!currentImage) {
+                    alert('Please upload and edit an image first.');
+                    return;
+                }
+                
+                let mimeType, extension;
+                if (format === 'png') {
+                    mimeType = 'image/png';
+                    extension = 'png';
+                } else {
+                    mimeType = 'image/webp';
+                    extension = 'webp';
+                }
+                
+                const dataURL = canvas.toDataURL({
+                    format: format,
+                    quality: 0.92
+                });
+                
+                const link = document.createElement('a');
+                link.download = `sticker.${extension}`;
+                link.href = dataURL;
+                link.click();
+            }
+            
+            function saveToStickerPack() {
+                alert('Sticker pack functionality would be implemented here.\nIn a real app, this would save to a local sticker pack collection.');
+            }
+            
+            function exportToWhatsApp() {
+                alert('WhatsApp export functionality would be implemented here.\nIn a real app, this would use the WhatsApp Stickers API.');
+            }
+            
+            function exportToTelegram() {
+                alert('Telegram export functionality would be implemented here.\nIn a real app, this would use the Telegram Stickers API.');
+            }
+        });
+    </script>
+</body>
+</html>
